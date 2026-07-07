@@ -101,9 +101,20 @@ export const getStudentDashboard = async (req, res) => {
       .populate('course', 'name code')
       .select('course pin windowClosesAt qrExpiresAt');
 
+    // Check if student already marked attendance for the active session
+    let alreadyMarked = false;
+    if (activeSession) {
+      const existingAttendance = await Attendance.findOne({
+        student: studentId,
+        session: activeSession._id
+      });
+      alreadyMarked = !!existingAttendance;
+    }
+
     res.json({
       success: true,
       activeSession: activeSession || null,
+      alreadyMarked, // NEW: Indicate if student already attended this session
       recentAttendance: recentRecords,
       todayAttendance: todayRecords,
       stats: {
