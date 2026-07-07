@@ -1,5 +1,5 @@
-import Session from '../models/Session.js';
-import Attendance from '../models/Attendance.js';
+import Session from '../models/session.js';
+import Attendance from '../models/attendance.js';
 import User from '../models/User.js';
 
 

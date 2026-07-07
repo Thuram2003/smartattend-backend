@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
-import Session from '../models/Session.js';
-import Attendance from '../models/Attendance.js';
-import UsedToken from '../models/UsedToken.js';
+import Session from '../models/session.js';
+import Attendance from '../models/attendance.js';
+import UsedToken from '../models/usedToken.js';
 import Course from '../models/course.js';
 import { getIO } from '../services/socketService.js';
 

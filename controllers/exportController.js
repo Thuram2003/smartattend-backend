@@ -1,5 +1,5 @@
-import Attendance from '../models/Attendance.js'
-import Session from '../models/Session.js'
+import Attendance from '../models/attendance.js'
+import Session from '../models/session.js'
 
 export const exportAttendanceCSV = async (req, res) => {
   try {
