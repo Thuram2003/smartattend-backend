@@ -15,15 +15,21 @@ export const initSocket = (server) => {
                 // Allow requests with no origin (like mobile apps, Postman, etc.)
                 if (!origin) return callback(null, true)
                 
+                // Check if origin is in allowed list
                 if (allowedOrigins.indexOf(origin) !== -1) {
+                    return callback(null, true)
+                }
+                
+                // Allow any *.vercel.app subdomain (for preview deployments)
+                if (origin && origin.match(/^https:\/\/.*\.vercel\.app$/)) {
+                    return callback(null, true)
+                }
+                
+                // In development, allow all origins for easier testing
+                if (process.env.NODE_ENV === 'development') {
                     callback(null, true)
                 } else {
-                    // In development, allow all origins for easier testing
-                    if (process.env.NODE_ENV === 'development') {
-                        callback(null, true)
-                    } else {
-                        callback(new Error('Not allowed by CORS'))
-                    }
+                    callback(new Error('Not allowed by CORS'))
                 }
             },
             methods: ['GET', 'POST'],
