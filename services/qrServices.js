@@ -5,7 +5,7 @@ export const generateQRToken = (sessionId) => {
   return jwt.sign(
     { sessionId, type: 'qr' },
     process.env.JWT_SECRET,
-    { expiresIn: '30s' }
+    { expiresIn: '7m' } // 7 minutes - matches 5min session + 2min grace period
   )
 }
 
