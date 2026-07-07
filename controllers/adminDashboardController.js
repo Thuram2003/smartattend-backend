@@ -41,7 +41,7 @@ export const getAdminStats = async (req, res) => {
     const totalSessions = await Session.countDocuments()
     const totalAttendanceRecords = await Attendance.countDocuments()
     const totalEnrollments = await Course.aggregate([
-      { $project: { enrolledCount: { $size: '$enrolledStudents' } } },
+      { $project: { enrolledCount: { $size: '$students' } } }, // FIXED: students not enrolledStudents
       { $group: { _id: null, total: { $sum: '$enrolledCount' } } }
     ])
     
@@ -235,7 +235,7 @@ export const getAllCourses = async (req, res) => {
     // Add enrollment count to each course
     const coursesWithStats = courses.map(course => ({
       ...course,
-      enrollmentCount: course.enrolledStudents?.length || 0
+      enrollmentCount: course.students?.length || 0 // FIXED: students not enrolledStudents
     }))
     
     res.json({
