@@ -44,9 +44,13 @@ export const markAttendance = async (req, res) => {
             return res.status(400).json({ message: 'Session is not active' });
         }
 
-        // 4. Check QR expiry
-        if (new Date() > session.qrExpiresAt)
-            return res.status(400).json({ message: 'QR code expired' });
+        // 4. Check QR expiry (be lenient - allow if within session window)
+        const qrAge = (new Date() - session.qrExpiresAt) / 1000; // seconds
+        
+        // Allow up to 2 minutes grace period after QR expires for students to complete the flow
+        if (qrAge > 120) {
+            return res.status(400).json({ message: 'QR code expired. Please scan the latest QR code.' });
+        }
 
         // 5. Check attendance window
         if (new Date() > session.windowClosesAt)

@@ -21,7 +21,7 @@ export const startSession = async (req, res) => {
       lecturer: req.user.id,
       pin,
       qrToken: 'pending',
-      qrExpiresAt: new Date(now.getTime() + 30000), // 30 seconds
+      qrExpiresAt: new Date(now.getTime() + 10 * 60000), // 10 minutes - enough time for full flow
       windowClosesAt: new Date(now.getTime() + windowMinutes * 60000),
     })
     
@@ -47,7 +47,7 @@ export const refreshQR = async (req, res) => {
 
     session.qrToken = qrToken;
     session.pin = pin;
-    session.qrExpiresAt = new Date(Date.now() + 20000);
+    session.qrExpiresAt = new Date(Date.now() + 5 * 60000); // 5 minutes - give students time to complete flow
     await session.save();
 
     const qrImage = await generateQRImage(qrToken);
