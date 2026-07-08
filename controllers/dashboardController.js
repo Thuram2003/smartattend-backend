@@ -1,6 +1,7 @@
 import Session from '../models/session.js';
 import Attendance from '../models/attendance.js';
 import User from '../models/User.js';
+import Course from '../models/course.js';
 
 
 export const getLecturerDashboard = async (req, res) => {
@@ -72,16 +73,34 @@ export const getStudentDashboard = async (req, res) => {
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
 
-    // All attendance records for this student (most recent first)
-    const allRecords = await Attendance.find({ student: studentId })
+    // Get student's enrolled courses first
+    const enrolledCourses = await Course.find({
+      students: studentId
+    }).select('_id name code');
+    const enrolledCourseIds = enrolledCourses.map(c => c._id);
+
+    // Get all sessions for enrolled courses (to calculate total possible sessions)
+    const allEnrolledSessions = await Session.find({
+      course: { $in: enrolledCourseIds }
+    }).select('_id isActive createdAt course');
+
+    // Filter closed sessions from enrolled courses
+    const closedEnrolledSessions = allEnrolledSessions.filter(s => !s.isActive);
+    const closedEnrolledSessionIds = closedEnrolledSessions.map(s => s._id);
+
+    // Get attendance records for enrolled courses only
+    const allRecords = await Attendance.find({ 
+      student: studentId,
+      session: { $in: allEnrolledSessions.map(s => s._id) }
+    })
       .populate({
         path: 'session',
-        select: 'course createdAt windowClosesAt',
+        select: 'course createdAt windowClosesAt isActive',
         populate: { path: 'course', select: 'name code' },
       })
       .sort({ createdAt: -1 });
 
-    // Today's attendance records
+    // Today's attendance records from enrolled courses
     const todayRecords = allRecords.filter(
       (r) => r.createdAt >= todayStart && r.createdAt <= todayEnd
     );
@@ -89,15 +108,52 @@ export const getStudentDashboard = async (req, res) => {
     // 5 most recent records for the UI feed
     const recentRecords = allRecords.slice(0, 5);
 
-    // Attendance rate: attended / total sessions that have closed
-    const totalClosedSessions = await Session.countDocuments({ isActive: false });
-    const attendanceRate =
-      totalClosedSessions > 0
-        ? ((allRecords.length / totalClosedSessions) * 100).toFixed(1)
-        : '0.0';
+    // Calculate attendance rate based on closed sessions from enrolled courses
+    const totalClosedEnrolledSessions = closedEnrolledSessions.length;
+    const attendedSessionsCount = allRecords.filter(record => 
+      closedEnrolledSessionIds.some(id => id.equals(record.session._id))
+    ).length;
+    
+    const attendanceRate = totalClosedEnrolledSessions > 0
+      ? Math.round((attendedSessionsCount / totalClosedEnrolledSessions) * 100)
+      : 0;
 
-    // Any currently active session the student can still join
-    const activeSession = await Session.findOne({ isActive: true })
+    // Calculate streak (consecutive days with attendance)
+    const attendanceDates = allRecords.map(r => {
+      const date = new Date(r.createdAt);
+      date.setHours(0, 0, 0, 0);
+      return date.getTime();
+    });
+    const uniqueDates = [...new Set(attendanceDates)].sort((a, b) => b - a);
+    
+    let currentStreak = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    if (uniqueDates.length > 0) {
+      const mostRecentDate = uniqueDates[0];
+      if (mostRecentDate === today.getTime() || mostRecentDate === yesterday.getTime()) {
+        currentStreak = 1;
+        let expectedDate = mostRecentDate - (24 * 60 * 60 * 1000);
+        
+        for (let i = 1; i < uniqueDates.length; i++) {
+          if (uniqueDates[i] === expectedDate) {
+            currentStreak++;
+            expectedDate -= (24 * 60 * 60 * 1000);
+          } else {
+            break;
+          }
+        }
+      }
+    }
+
+    // Any currently active session for enrolled courses
+    const activeSession = await Session.findOne({ 
+      isActive: true,
+      course: { $in: enrolledCourseIds }
+    })
       .populate('course', 'name code')
       .select('course pin windowClosesAt qrExpiresAt');
 
@@ -114,13 +170,17 @@ export const getStudentDashboard = async (req, res) => {
     res.json({
       success: true,
       activeSession: activeSession || null,
-      alreadyMarked, // NEW: Indicate if student already attended this session
+      alreadyMarked,
       recentAttendance: recentRecords,
       todayAttendance: todayRecords,
+      enrolledCoursesCount: enrolledCourses.length,
       stats: {
-        totalAttended: allRecords.length,
+        totalAttended: attendedSessionsCount,
+        totalSessions: totalClosedEnrolledSessions,
         todayCount: todayRecords.length,
         attendanceRate: `${attendanceRate}%`,
+        currentStreak: currentStreak,
+        missedSessions: totalClosedEnrolledSessions - attendedSessionsCount,
       },
     });
   } catch (err) {

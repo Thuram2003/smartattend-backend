@@ -63,9 +63,10 @@ export const getIO = () => {
     return io
 }
 
-export const emitNewQR = (sessionId, qrImage, pin) => {
+export const emitNewQR = (sessionId, qrImage, pin, qrExpiresAt) => {
     if (io) {
-        io.to(sessionId).emit('qr-refreshed', { qrImage, pin })
-        io.to(sessionId).emit('new-qr', { qrImage, pin })
+        const emitData = { qrImage, pin, qrExpiresAt }
+        io.to(sessionId).emit('qr-refreshed', emitData)
+        io.to(sessionId).emit('new-qr', emitData)
     }
 }

@@ -44,10 +44,15 @@ export const markAttendance = async (req, res) => {
             return res.status(400).json({ message: 'Session is not active' });
         }
 
+        // 3.5. NEW: Verify student is enrolled in the course
+        if (session.course && !session.course.students.includes(req.user.id)) {
+            return res.status(403).json({ message: 'You are not enrolled in this course' });
+        }
+
         // 4. Check QR expiry with grace period
         const now = new Date();
         const qrExpiry = new Date(session.qrExpiresAt);
-        const gracePeriod = 2 * 60 * 1000; // 2 minutes in milliseconds
+        const gracePeriod = 15 * 1000; // 15 seconds - optimized for minimal downtime
         
         // Allow submission if within QR validity OR within grace period after expiry
         if (now > new Date(qrExpiry.getTime() + gracePeriod)) {

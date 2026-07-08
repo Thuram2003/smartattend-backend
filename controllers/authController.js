@@ -24,7 +24,7 @@ export const register = async (req, res) => {
     res.status(201).json({
       success: true,
       token,
-      user: { id: user._id, fullName: user.fullName, email: user.email, role: user.role, studentId: user.studentId, department: user.department },
+      user: { _id: user._id, fullName: user.fullName, email: user.email, role: user.role, studentId: user.studentId, department: user.department },
     })
   } catch (err) {
     res.status(500).json({ message: err.message })
@@ -51,7 +51,7 @@ export const login = async (req, res) => {
     res.json({
       success: true,
       token,
-      user: { id: user._id, fullName: user.fullName, email: user.email, role: user.role, studentId: user.studentId, department: user.department },
+      user: { _id: user._id, fullName: user.fullName, email: user.email, role: user.role, studentId: user.studentId, department: user.department },
     })
   } catch (err) {
     res.status(500).json({ message: err.message })
@@ -83,7 +83,7 @@ export const updateMe = async (req, res) => {
     res.json({ 
       success: true, 
       user: { 
-        id: user._id, 
+        _id: user._id, 
         fullName: user.fullName, 
         role: user.role, 
         studentId: user.studentId, 

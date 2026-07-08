@@ -14,6 +14,22 @@ const generateRandomPassword = () => {
 }
 
 /**
+ * @desc    Normalize department name (trim whitespace and convert to Title Case)
+ */
+const normalizeDepartment = (dept) => {
+  if (!dept || typeof dept !== 'string') return 'Not Assigned'
+  
+  // Trim whitespace and normalize to Title Case
+  const normalized = dept.trim()
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+  
+  return normalized || 'Not Assigned'
+}
+
+/**
  * @desc    Create a new lecturer account
  * @route   POST /api/admin/lecturers
  * @access  Private/Admin
@@ -48,7 +64,7 @@ export const createLecturer = async (req, res) => {
       email,
       password: generatedPassword,
       role: 'lecturer',
-      department: department || 'Not Assigned',
+      department: normalizeDepartment(department),
       studentId: null // Lecturers don't have student IDs
     })
     
@@ -156,7 +172,7 @@ export const updateLecturer = async (req, res) => {
     
     // Update fields
     if (fullName) lecturer.fullName = fullName
-    if (department) lecturer.department = department
+    if (department) lecturer.department = normalizeDepartment(department)
     
     await lecturer.save()
     
@@ -267,7 +283,7 @@ export const createStudent = async (req, res) => {
       password: generatedPassword,
       role: 'student',
       studentId,
-      department: department || 'Not Assigned'
+      department: normalizeDepartment(department)
     })
     
     // Return student info and generated password
@@ -387,7 +403,7 @@ export const updateStudent = async (req, res) => {
     
     // Update fields
     if (fullName) student.fullName = fullName
-    if (department) student.department = department
+    if (department) student.department = normalizeDepartment(department)
     
     await student.save()
     

@@ -49,8 +49,10 @@ export const getAdminStats = async (req, res) => {
     if (totalSessions > 0 && totalEnrollments.length > 0) {
       const expectedAttendance = totalSessions * totalEnrollments[0].total
       if (expectedAttendance > 0) {
-        const rate = (totalAttendanceRecords / expectedAttendance * 100).toFixed(1)
-        attendanceRate = `${rate}%`
+        const rate = (totalAttendanceRecords / expectedAttendance * 100)
+        // Format: Remove .0 from whole numbers (e.g., 4.0% -> 4%, but 4.5% stays 4.5%)
+        const formattedRate = rate % 1 === 0 ? Math.round(rate) : rate.toFixed(1)
+        attendanceRate = `${formattedRate}%`
       }
     }
     
@@ -226,7 +228,7 @@ export const getAllCourses = async (req, res) => {
     
     // Get courses with lecturer info
     const courses = await Course.find(searchQuery)
-      .populate('lecturerId', 'fullName email department')
+      .populate('lecturer', 'fullName email department')
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit)

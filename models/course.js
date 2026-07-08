@@ -3,7 +3,7 @@ import mongoose from 'mongoose'
 const courseSchema = new mongoose.Schema({
   name: { type: String, required: true},
   code: { type: String, required: true, unique: true },
-  lecturer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  lecturer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   students: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   
   // Classroom geofencing (optional)

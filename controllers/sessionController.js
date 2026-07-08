@@ -14,6 +14,19 @@ export const startSession = async (req, res) => {
       return res.status(400).json({ message: 'windowMinutes must be between 1 and 120' })
     }
 
+    // Check if there's already an active session for this course
+    const existingSession = await Session.findOne({
+      course: courseId,
+      lecturer: req.user.id,
+      isActive: true
+    })
+
+    if (existingSession) {
+      return res.status(400).json({ 
+        message: 'An active session already exists for this course. Please close it first.' 
+      })
+    }
+
     const pin = generatePIN()
     const now = new Date()
     const session = await Session.create({
@@ -21,7 +34,7 @@ export const startSession = async (req, res) => {
       lecturer: req.user.id,
       pin,
       qrToken: 'pending',
-      qrExpiresAt: new Date(now.getTime() + 10 * 60000), // 10 minutes - enough time for full flow
+      qrExpiresAt: new Date(now.getTime() + 100 * 1000), // 100 seconds - optimized timing
       windowClosesAt: new Date(now.getTime() + windowMinutes * 60000),
     })
     
@@ -47,13 +60,22 @@ export const refreshQR = async (req, res) => {
 
     session.qrToken = qrToken;
     session.pin = pin;
-    session.qrExpiresAt = new Date(Date.now() + 5 * 60000); // 5 minutes - give students time to complete flow
+    session.qrExpiresAt = new Date(Date.now() + 100 * 1000); // 100 seconds - optimized timing
     await session.save();
 
     const qrImage = await generateQRImage(qrToken);
-    emitNewQR(session._id.toString(), qrImage, pin);
+    emitNewQR(session._id.toString(), qrImage, pin, session.qrExpiresAt);
 
-    res.json({ success: true, qrImage, pin, qrToken });
+    res.json({ 
+      success: true, 
+      qrImage, 
+      pin, 
+      qrToken,
+      session: {
+        _id: session._id,
+        qrExpiresAt: session.qrExpiresAt
+      }
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
